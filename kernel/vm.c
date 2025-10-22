@@ -94,6 +94,14 @@ kvminithart()
 //   21..29 -- 9 bits of level-1 index.
 //   12..20 -- 9 bits of level-0 index.
 //    0..11 -- 12 bits of byte offset within the page.
+
+//-------------------------
+// this is used for find a phsical address 
+// of some virtual address in a page table
+// is proc!=0, then we create a va in the pagetableJ
+// (creating a pte ) in pagetalbe
+// then return the physical addresss 
+// 
 pte_t *
 walk(pagetable_t pagetable, uint64 va, int alloc)
 {
@@ -103,16 +111,34 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
   for(int level = 2; level > 0; level--) {
     pte_t *pte = &pagetable[PX(level, va)];
     if(*pte & PTE_V) {
+      //if the least bits of the byte pointed by
+      // pte is not zero, (the valid bit)
+      //the (V bit), then we get the contents of
+      //that byte,(which is the start address of the 
+      //next level pagetable)
+      //of course we dont need the flags
+      //hence we move the contents 10 bits left to erase the
+      //flags, but move back 12 bits 
+      //hence each page is 4k bytes large
+      //(eg, if we incremet 1 in the PPN,which is contents 
+      //that points to page table, we move 4k bytes,hence the next
+      // 'page' )
+      // of course we go to next level 
+      //and
       pagetable = (pagetable_t)PTE2PA(*pte);
     } else {
       if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
         return 0;
       memset(pagetable, 0, PGSIZE);
       *pte = PA2PTE(pagetable) | PTE_V;
+      //make a PTE valid
     }
   }
+  //below code has made pagetable to
+  //the lowest level page
   return &pagetable[PX(0, va)];
 }
+
 
 // Look up a virtual address, return the physical address,
 // or 0 if not mapped.
@@ -208,6 +234,12 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
       kfree((void*)pa);
     }
     *pte = 0;
+    //set the content of a pte to 0 will 
+    //make it 
+    //1. its leaf page table entry not allocated
+    //2. if it's already the lowest able 
+    //then its a virtual address page not allocated
+    //what's the difference with VALID bit set to 0 ?  BagEnd
   }
 }
 
@@ -227,15 +259,36 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz, int xperm)
     mem = kalloc();
     if(mem == 0){
       uvmdealloc(pagetable, a, oldsz);
+      //we can not allocate enough memory so we 
+      //restore the page we have allocated 
+      //and say we have a error 
       return 0;
+      //but you sure this is a good idea to 
+      //return 0 to indicate error ? BagEnd
     }
     memset(mem, 0, PGSIZE);
+    //of course make new pages junk,
+  
+    //we notice that all those function calls 
+    //need to be passed in a page table
+    //where does those come from ? 
+    // a register? BagEnd
     if(mappages(pagetable, a, PGSIZE, (uint64)mem, PTE_R|PTE_U|xperm) != 0){
+      //if we can not map the address to the physical page we 
+      //just got
+      //the possibility to fail? 
+      //1.    BagEnd
       kfree(mem);
       uvmdealloc(pagetable, a, oldsz);
+      //restore the state
       return 0;
     }
   }
+  //judging from the fact this function only return size
+  //this function only increase va space size, but 
+  //we need other ways to find usable page from page tables
+  //when a user process wants to use memory 
+  //eg, by calling malloc in c
   return newsz;
 }
 
@@ -283,6 +336,8 @@ void
 uvmfree(pagetable_t pagetable, uint64 sz)
 {
   if(sz > 0)
+    //va starts with 0 cause user address space 
+    //starts with 0
     uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
   freewalk(pagetable);
 }

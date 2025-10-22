@@ -3,9 +3,22 @@
 void*
 memset(void *dst, int c, uint n)
 {
+  //when passed from exe
+  // the n = maxarg * 8
+
   char *cdst = (char *) dst;
+  //first cast dst to a pointer to char
+  //
   int i;
   for(i = 0; i < n; i++){
+    //find the char pointed by cdst
+    //but setting it to a int
+    // shouldn't int take 32bits(4bytes) on
+    // a 64 bits machine?
+    //
+    // so this bytes was assigned by
+    // a 4 bytes?
+    // i dont know what will happe
     cdst[i] = c;
   }
   return dst;
@@ -35,7 +48,7 @@ memmove(void *dst, const void *src, uint n)
 
   if(n == 0)
     return dst;
-  
+
   s = src;
   d = dst;
   if(s < d && s + n > d){
@@ -104,4 +117,3 @@ strlen(const char *s)
     ;
   return n;
 }
-

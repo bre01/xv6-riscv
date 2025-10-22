@@ -85,7 +85,7 @@ sys_write(void)
   struct file *f;
   int n;
   uint64 p;
-  
+
   argaddr(1, &p);
   argint(2, &n);
   if(argfd(0, 0, &f) < 0)
@@ -412,7 +412,7 @@ sys_chdir(void)
   char path[MAXPATH];
   struct inode *ip;
   struct proc *p = myproc();
-  
+
   begin_op();
   if(argstr(0, path, MAXPATH) < 0 || (ip = namei(path)) == 0){
     end_op();
@@ -439,25 +439,53 @@ sys_exec(void)
   uint64 uargv, uarg;
 
   argaddr(1, &uargv);
+  //this first argument is a pointer to
+  // a array, we store the pointer to uargv
   if(argstr(0, path, MAXPATH) < 0) {
+    //we get the exetuable path
     return -1;
   }
+  //we then allocate enough space to
+  // store pointers
+  //f(argv)=MAXARG*8 ,since
+  // it return the maxarg pointers
+  // and each pointers take up 8 bytes
   memset(argv, 0, sizeof(argv));
+  //this is a pointer to a location on stack
+  //clean up the garbage on stack
   for(i=0;; i++){
     if(i >= NELEM(argv)){
+      //the i should never be there
       goto bad;
     }
     if(fetchaddr(uargv+sizeof(uint64)*i, (uint64*)&uarg) < 0){
+      //uargv+8*i ,the first uargv points to
+      // first element (a pointer, which takes 8 bytes)on array
+      // then uargv+8 points to next pointer,
+      //
+      //we have already set uarv to be pointer to first arg
+      //if we find out the uargv is not from user process
+      //(eg, the page in user page table is not valid)
       goto bad;
     }
     if(uarg == 0){
+      //this user arg is null terminated at first, which means
+      // no string any more
       argv[i] = 0;
+      //the we set the i th element of argv to be NULL
+      //then stop iterating the args
       break;
     }
+    //if we made there
+    // the we find a argument
+    // we first allocate a page??? for a element
     argv[i] = kalloc();
+    //if after kalloc, the argv[i] is still NULL
+    // of course we failed kalloc
     if(argv[i] == 0)
       goto bad;
     if(fetchstr(uarg, argv[i], PGSIZE) < 0)
+      //if we can not find that string in the
       goto bad;
   }
 

@@ -40,7 +40,7 @@ freerange(void *pa_start, void *pa_end)
 }
 
 // Free the page of physical memory pointed at by pa,
-// which normally should have been returned by a
+// which
 // call to kalloc().  (The exception is when
 // initializing the allocator; see kinit above.)
 void

@@ -1,0 +1,45 @@
+    {
+        "version": "0.2.0",
+        "configurations": [
+            {
+                "name": "Debug xv6-riscv with Native Debug",
+                "type": "gdb",
+                "request": "attach",
+                "executable": "${workspaceFolder}/kernel/kernel",
+                "target": "localhost:26000",
+                "remote": true,
+                "cwd": "${workspaceFolder}",
+                "gdbpath": "/usr/bin/gdb-multiarch",
+                "autorun": [
+                    "set architecture riscv:rv64",
+                    "file kernel/kernel"
+                ],
+                "stopAtEntry": false,
+                "valuesFormatting": "parseText",
+                "showDevDebugOutput": true,
+                "printCalls": true
+            },
+            {
+                "name": "Debug",
+                "type": "cppdbg",
+                "request": "launch",
+                "program": "${workspaceFolder}/kernel/kernel", // kernel land program
+                // "program": "${workspaceFolder}/user/_wc", // user land program
+                "cwd": "${workspaceFolder}",
+                "miDebuggerPath": "riscv64-elf-gdb",
+                "miDebuggerServerAddress": "127.0.0.1:25501",
+                "MIMode": "gdb",
+                "stopAtEntry": true,
+                "externalConsole": true,
+                "setupCommands": [
+                    {
+                        1
+"description": "Enable pretty-printing for gdb",
+                        "text": "-enable-pretty-printing",
+                        "ignoreFailures": false
+                    }
+                ]
+            }
+        ]
+    }
+        
